@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>NEXORA</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080e16;color:white;font-family:Arial,sans-serif;overflow:hidden}
+header{height:48px;background:#101c29;border-bottom:1px solid #294052;display:flex;align-items:center;justify-content:space-between;padding:0 14px}
+.logo{font-size:21px;font-weight:900;letter-spacing:4px;color:#69d9ff}
+.info{font-size:12px;color:#c1d5e4}
+#game{display:block;width:100vw;height:calc(100dvh - 48px);touch-action:none}
+#help{position:fixed;bottom:12px;left:12px;background:#101c29dd;border:1px solid #466078;border-radius:10px;padding:9px;font-size:11px;color:#d4e5f0}
+#attack{position:fixed;right:20px;bottom:25px;width:76px;height:76px;border-radius:50%;border:2px solid #ffcc69;background:#9b4b28dd;color:white;font-weight:bold;font-size:13px}
+#shop{position:fixed;right:18px;top:62px;background:#142638dd;border:1px solid #54718b;border-radius:9px;padding:10px;font-size:12px}
+#shop button{display:block;margin-top:6px;background:#28465c;color:white;border:1px solid #7194aa;border-radius:6px;padding:7px}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">NEXORA</div>
+<div class="info">3 VS 3 · PROTOTYPE</div>
+<div class="info" id="gold">Золото: 500</div>
+</header>
+<canvas id="game"></canvas>
+<div id="shop">⚒ ТОРГОВЕЦ
+<button onclick="buy()">Купить меч · 200 золота</button>
+</div>
+<div id="help">Управление: WASD / стрелки<br>На телефоне — веди пальцем по карте<br>Атака: кнопка справа</div>
+<button id="attack" onclick="attack()">АТАКА</button>
+<script>
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+let W,H,scale=1,gold=500,damage=25;
+let hero={x:0,y:0,hp:100};
+let creeps=[],particles=[],last=0;
+function resize(){
+ W=canvas.width=innerWidth*devicePixelRatio;
+ H=canvas.height=(innerHeight-48)*devicePixelRatio;
+ scale=devicePixelRatio;
+ ctx.setTransform(scale,0,0,scale,0,0);
+ W=innerWidth;H=innerHeight-48;
+ hero.x=W*.28;hero.y=H*.52;
+}
+addEventListener('resize',resize);resize();
+const lanes=[{y:.31},{y:.70}];
+function unit(x,y,team){
+ return {x,y,team,hp:100,max:100,r:9};
+}
+for(let lane of lanes){
+ for(let i=0;i<4;i++){
+  creeps.push(unit(W*.18-i*28,H*lane.y,0));
+  creeps.push(unit(W*.82+i*28,H*lane.y,1));
+ }
+}
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
+function circle(x,y,r,c){
+ ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=c;ctx.fill();
+}
+function text(t,x,y,size=12,c='white'){
+ ctx.font='bold '+size+'px Arial';ctx.textAlign='center';ctx.fillStyle=c;ctx.fillText(t,x,y);
+}
+function line(x1,y1,x2,y2,c,w){
+ ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
+ ctx.strokeStyle=c;ctx.lineWidth=w;ctx.stroke();
+}
+function tower(x,y,team){
+ circle(x,y,19,team?'#a94a53':'#398bc0');
+ circle(x,y,12,'#d8e5ed');
+ circle(x,y,6,team?'#e95b62':'#55caff');
+ text('БАШНЯ',x,y+32,9);
+}
+function draw(){
+ ctx.clearRect(0,0,W,H);
+ rect(0,0,W,H,'#142b25');
+ // лес и земля
+ for(let i=0;i<150;i++){
+  let x=(i*137)%W,y=(i*239)%H;
+  circle(x,y,5+(i%5)*2,'#1c4434');
+ }
+ // река
+ line(0,H*.5,W,H*.5,'#235b68',30);
+ line(0,H*.5,W,H*.5,'#347d88',2);
+ // две линии
+ for(let lane of lanes){
+  let y=H*lane.y;
+  line(0,y,W,y,'#6e6650',48);
+  line(0,y,W,y,'#b3a27c',2);
+  for(let x=0;x<W;x+=55)circle(x,y,2,'#e0d2a7');
+ }
+ // базы
+ circle(W*.07,H*.5,39,'#246c9a');
+ text('СИНИЙ ТРОН',W*.07,H*.5+57,10);
+ circle(W*.93,H*.5,39,'#9c343e');
+ text('КРАСНЫЙ ТРОН',W*.93,H*.5+57,10);
+ tower(W*.27,H*.31,0);tower(W*.48,H*.31,0);
+ tower(W*.27,H*.70,0);tower(W*.48,H*.70,0);
+ tower(W*.73,H*.31,1);tower(W*.52,H*.31,1);
+ tower(W*.73,H*.70,1);tower(W*.52,H*.70,1);
+ // босс
+ circle(W*.83,H*.12,35,'#583a78');
+ circle(W*.83,H*.12,22,'#a47bd5');
+ text('РОШАН',W*.83,H*.12+52,12,'#e5caff');
+ text('✦ АЕГИС ✦',W*.83,H*.12+4,11);
+ // магазин
+ circle(W*.12,H*.85,21,'#bd8b36');
+ text('⚒',W*.12,H*.85+6,20);
+ text('ТОРГОВЕЦ',W*.12,H*.85+38,10);
+ // крипы
+ for(let c of creeps){
+  circle(c.x,c.y,c.r,c.
+  team?'#e95760':'#54c7f4');
+  rect(c.x-9,c.y-15,18,3,'#402d2d');
+  rect(c.x-9,c.y-15,18*c.hp/c.max,3,'#71e28a');
+ }
+ // герой
+ circle(hero.x,hero.y,17,'#f2c65d');
+ circle(hero.x,hero.y,10,'#fff0b0');
+ text('ТЫ',hero.x,hero.y-24,10,'#ffe39a');
+ rect(hero.x-18,hero.y+22,36,4,'#422');
+ rect(hero.x-18,hero.y+22,36*hero.hp/100,4,'#65e88c');
+ // союзники
+ for(let i=0;i<2;i++){
+  circle(W*.19,H*(.43+i*.13),13,'#318cbb');
+  text('СОЮЗ',W*.19,H*(.43+i*.13)-18,8);
+ }
+ // враги
+ for(let i=0;i<3;i++){
+  circle(W*.81,H*(.39+i*.11),13,'#b94350');
+  text('ВРАГ',W*.81,H*(.39+i*.11)-18,8);
+ }
+}
+function update(dt){
+ for(let c of creeps){
+  c.x+=(c.team?-1:1)*dt*.025;
+  if(c.x<0)c.x=W;
+  if(c.x>W)c.x=0;
+ }
+}
+function loop(t){
+ let dt=Math.min(t-last,40);last=t;
+ update(dt);draw();requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+function attack(){
+ let target=null,dist=75;
+ for(let c of creeps){
+  if(c.team===1){
+   let d=Math.hypot(c.x-hero.x,c.y-hero.y);
+   if(d<dist){dist=d;target=c}
+  }
+ }
+ if(target){
+  target.hp-=damage;
+  if(target.hp<=0){
+   creeps=creeps.filter(c=>c!==target);
+   gold+=50;
+   document.getElementById('gold').textContent='Золото: '+gold;
+  }
+ }
+}
+function buy(){
+ if(gold>=200){
+  gold-=200;damage+=15;
+  document.getElementById('gold').textContent='Золото: '+gold;
+  alert('Меч куплен! Урон увеличен.');
+ }else alert('Недостаточно золота!');
+}
+let keys={};
+addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+function move(){
+ let s=3;
+ if(keys.w||keys.arrowup)hero.y-=s;
+ if(keys.s||keys.arrowdown)hero.y+=s;
+ if(keys.a||keys.arrowleft)hero.x-=s;
+ if(keys.d||keys.arrowright)hero.x+=s;
+ hero.x=Math.max(15,Math.min(W-15,hero.x));
+ hero.y=Math.max(15,Math.min(H-15,hero.y));
+ requestAnimationFrame(move);
+}
+move();
+let dragging=false;
+canvas.addEventListener('pointerdown',e=>{dragging=true;});
+canvas.addEventListener('pointerup',()=>dragging=false);
+canvas.addEventListener('pointermove',e=>{
+ if(dragging){
+  let r=canvas.getBoundingClientRect();
+  hero.x=e.clientX-r.left;
+  hero.y=e.clientY-r.top;
+ }
+});
+</script>
+</body>
+</html>
